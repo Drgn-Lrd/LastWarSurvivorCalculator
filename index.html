@@ -17,8 +17,26 @@
         .container {
             background-color: #ffffff;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-            max-width: 650px; /* Adjusted max-width for a tighter fit */
+            max-width: 650px; /* Adjusted max-width for a tighter fit on larger screens */
+            padding: 1rem; /* Default padding for smaller screens */
         }
+        @media (min-width: 640px) { /* Tailwind's 'sm' breakpoint */
+            .container {
+                padding: 2rem; /* Restore larger padding on larger screens */
+            }
+        }
+
+        th, td {
+            padding: 8px 12px; /* Slightly reduced padding for compactness */
+            text-align: left;
+            border-radius: 8px; /* Rounded corners for cells */
+        }
+        @media (min-width: 640px) {
+            th, td {
+                padding: 12px 16px; /* Restore larger padding on larger screens */
+            }
+        }
+
         th {
             background-color: #e2e8f0; /* Light gray for headers */
             color: #4a5568; /* Darker text for headers */
@@ -32,7 +50,7 @@
             content: ' ▲'; /* Up arrow for ascending */
             font-size: 0.7em;
             position: absolute;
-            right: 8px;
+            right: 4px; /* Adjust position for smaller padding */
             top: 50%;
             transform: translateY(-50%);
         }
@@ -40,7 +58,7 @@
             content: ' ▼'; /* Down arrow for descending */
             font-size: 0.7em;
             position: absolute;
-            right: 8px;
+            right: 4px; /* Adjust position for smaller padding */
             top: 50%;
             transform: translateY(-50%);
         }
@@ -53,8 +71,10 @@
         }
         .input-field {
             border: 1px solid #cbd5e0;
-            width: 80px; /* Fixed width, adjust as needed */
+            width: 100%; /* Make inputs take full width of their cell */
+            max-width: 80px; /* But limit their max width for larger screens */
             text-align: center; /* Center text in inputs */
+            box-sizing: border-box; /* Include padding and border in the element's total width and height */
         }
         .input-field:focus {
             outline: none; /* Remove default focus outline */
@@ -120,6 +140,10 @@
         html.dark .final-time-text {
             color: #90cdf4; /* Lighter blue for final time in dark mode */
         }
+        /* Adjusted color for summary info in dark mode */
+        html.dark #summaryInfo p {
+            color: #cbd5e0; /* Lighter gray for better contrast */
+        }
 
         /* Style for the SVG icons */
         .theme-icon {
@@ -140,7 +164,7 @@
             -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
             margin-left: auto; /* Center the table-responsive div */
             margin-right: auto; /* Center the table-responsive div */
-            max-width: fit-content; /* Make table container fit its content */
+            /* Removed max-width: fit-content to allow it to expand if needed */
         }
 
         /* Center the table within its responsive container */
@@ -148,7 +172,7 @@
             margin-left: auto;
             margin-right: auto;
             width: 100%; /* Ensure table takes full width of its container */
-            min-width: 500px; /* Prevent table from becoming too narrow on small screens */
+            /* Removed min-width to allow it to shrink on small screens */
         }
     </style>
 </head>
@@ -417,8 +441,8 @@
                 overallTotalFinalSeconds += p.finalTimeInSeconds;
             });
 
+            // Adjusted summaryInfo.innerHTML to remove "Total Valid Survivors" and ensure color contrast
             summaryInfo.innerHTML = `
-                <p>Total Valid Survivors: ${validPerformers.length}</p>
                 <p>Total Help Requests: ${totalHelpRequests}</p>
                 <p>Total Base Time: ${formatTime(totalBaseSeconds)}</p>
                 <p>Overall Total Final Time: ${formatTime(overallTotalFinalSeconds)}</p>
