@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Survivor Speedup Times</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Base styles for light mode */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8; /* Light blue-gray background */
+            color: #333; /* Default text color */
+            transition: background-color 0.3s, color 0.3s; /* Smooth transition for theme changes */
+        }
+        .container {
+            background-color: #ffffff;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+        th {
+            background-color: #e2e8f0; /* Light gray for headers */
+            color: #4a5568; /* Darker text for headers */
+        }
+        td {
+            background-color: #f7fafc; /* Very light gray for data cells */
+            border: 1px solid #edf2f7; /* Subtle border */
+        }
+        tr:hover td {
+            background-color: #e0f2fe; /* Light blue on hover */
+        }
+        .input-field {
+            border: 1px solid #cbd5e0;
+            width: 80px; /* Fixed width, adjust as needed */
+            text-align: center; /* Center text in inputs */
+        }
+        .input-field:focus {
+            border-color: #3b82f6; /* Blue on focus */
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+        }
+        .recommendations {
+            background-color: #ecfdf5; /* Light green for recommendations */
+            border: 1px solid #a7f3d0;
+        }
+        .recommendations h2 {
+            color: #065f46; /* Dark green text */
+        }
+        .recommendations li {
+            color: #10b981; /* Medium green text */
+        }
+        .final-time-text {
+            color: #2563eb; /* Blue for final time in light mode */
+        }
+
+        /* Dark mode styles using Tailwind's 'dark:' prefix */
+        html.dark body {
+            background-color: #1a202c; /* Dark background */
+            color: #e2e8f0; /* Light text color */
+        }
+        html.dark .container {
+            background-color: #2d3748; /* Darker container */
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        }
+        html.dark th {
+            background-color: #4a5568; /* Darker gray for headers */
+            color: #e2e8f0; /* Lighter text for headers */
+        }
+        html.dark td {
+            background-color: #2d3748; /* Even darker for data cells */
+            border: 1px solid #4a5568; /* Darker border */
+        }
+        html.dark tr:hover td {
+            background-color: #4299e1; /* Blue on hover in dark mode */
+        }
+        html.dark .input-field {
+            background-color: #4a5568;
+            color: #e2e8f0;
+            border: 1px solid #6b7280;
+        }
+        html.dark .input-field:focus {
+            border-color: #63b3ed;
+            box-shadow: 0 0 0 3px rgba(99, 179, 237, 0.25);
+        }
+        html.dark .recommendations {
+            background-color: #2f4f4f; /* Darker green for recommendations */
+            border: 1px solid #48bb78;
+        }
+        html.dark .recommendations h2 {
+            color: #68d391; /* Lighter green text */
+        }
+        html.dark .recommendations li {
+            color: #9ae6b4; /* Even lighter green text */
+        }
+        html.dark .final-time-text {
+            color: #90cdf4; /* Lighter blue for final time in dark mode */
+        }
+
+        /* Style for the SVG icons */
+        .theme-icon {
+            width: 24px; /* Adjust size as needed */
+            height: 24px;
+            stroke: currentColor; /* Use stroke for Lucide icons */
+            stroke-width: 2; /* Default stroke width for Lucide */
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            fill: none; /* Lucide icons are typically outlined, not filled */
+            transition: stroke 0.3s;
+        }
+
+
+        /* Responsive table container */
+        .table-responsive {
+            overflow-x: auto; /* Allows horizontal scrolling on small screens */
+            -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+            margin-left: auto; /* Center the table-responsive div */
+            margin-right: auto; /* Center the table-responsive div */
+            max-width: fit-content; /* Make table container fit its content */
+        }
+
+        /* Center the table within its responsive container */
+        #timeTable {
+            margin-left: auto;
+            margin-right: auto;
+            width: 100%; /* Ensure table takes full width of its container */
+            min-width: 500px; /* Prevent table from becoming too narrow on small screens */
+        }
+    </style>
+</head>
+<body class="p-4">
+    <div class="container max-w-900px mx-auto p-8 rounded-xl">
+        <h1 class="text-3xl font-bold text-center mb-8">Survivor Speedup Times</h1>
+
+        <div class="table-responsive mb-8">
+            <table id="timeTable">
+                <thead>
+                    <tr>
+                        <th class="rounded-tl-lg">Survivor</th>
+                        <th>Help</th>
+                        <th>Min</th>
+                        <th>Sec</th>
+                        <th class="rounded-tr-lg">Final Time</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Data will be populated by JavaScript -->
+                </tbody>
+            </table>
+        </div>
+
+        <div id="recommendations" class="recommendations mx-auto max-w-xl">
+            <h2 class="text-2xl font-semibold">Recommended Survivors</h2>
+            <ol id="recommendationList" class="text-lg"></ol>
+        </div>
+
+        <div class="flex justify-center mt-8">
+            <button id="themeToggle" class="p-3 rounded-full bg-blue-500 text-white font-semibold shadow-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 transition duration-300 ease-in-out flex items-center justify-center">
+                <span id="themeIcon">
+                    <!-- Icon will be injected here by JavaScript -->
+                </span>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Initial data based on your spreadsheet image
+        const initialData = [
+            { survivor: "Amanda", multiplier: 2, min: 10, sec: 40 },
+            { survivor: "Catherine", multiplier: 2, min: 8, sec: 0 },
+            { survivor: "Charles (UR)", multiplier: 3, min: 13, sec: 21 },
+            { survivor: "Charles (SSR)", multiplier: 2, min: 10, sec: 20 },
+            { survivor: "Emily", multiplier: 3, min: 4, sec: 48 },
+            { survivor: "Javier", multiplier: 2, min: 10, sec: 0 },
+            { survivor: "Karen", multiplier: 3, min: 4, sec: 48 },
+            { survivor: "Maria", multiplier: 3, min: 14, sec: 24 },
+            { survivor: "Michael", multiplier: 3, min: 4, sec: 48 }
+        ];
+
+        const timeTableBody = document.querySelector('#timeTable tbody');
+        const recommendationList = document.getElementById('recommendationList');
+        const themeToggleBtn = document.getElementById('themeToggle');
+        const themeIconSpan = document.getElementById('themeIcon');
+        const htmlElement = document.documentElement;
+
+        // Lucide SVG icons
+        const sunIcon = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="theme-icon">
+                <circle cx="12" cy="12" r="4"></circle>
+                <path d="M12 2v2"></path>
+                <path d="M12 20v2"></path>
+                <path d="M4.93 4.93l1.41 1.41"></path>
+                <path d="M17.66 17.66l1.41 1.41"></path>
+                <path d="M2 12h2"></path>
+                <path d="M20 12h2"></path>
+                <path d="M4.93 19.07l1.41-1.41"></path>
+                <path d="M17.66 6.34l1.41-1.41"></path>
+            </svg>
+        `;
+        const moonIcon = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="theme-icon">
+                <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>
+            </svg>
+        `;
+
+
+        /**
+         * Converts total seconds into a "Xm Ys" formatted string.
+         * @param {number} totalSeconds - The total time in seconds.
+         * @returns {string} Formatted time string.
+         */
+        function formatTime(totalSeconds) {
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+            return `${minutes}m ${seconds}s`;
+        }
+
+        /**
+         * Calculates the final time in seconds based on input values.
+         * @param {number} multiplierValue - Value from the 'Help' column, now acting as a multiplier.
+         * @param {number} minutes - Value from 'min' column.
+         * @param {number} seconds - Value from 'sec' column.
+         * @returns {number} Total final time in seconds.
+         */
+        function calculateFinalTimeInSeconds(multiplierValue, minutes, seconds) {
+            const baseSeconds = (minutes * 60) + seconds;
+            return baseSeconds * multiplierValue;
+        }
+
+        /**
+         * Renders the table rows and calculates times.
+         */
+        function renderTable() {
+            timeTableBody.innerHTML = ''; // Clear existing rows
+
+            initialData.forEach((data, index) => {
+                const row = timeTableBody.insertRow();
+                row.dataset.index = index;
+
+                const survivorCell = row.insertCell();
+                survivorCell.textContent = data.survivor;
+
+                const multiplierCell = row.insertCell();
+                const multiplierInput = document.createElement('input');
+                multiplierInput.type = 'number';
+                multiplierInput.value = data.multiplier;
+                multiplierInput.min = "0";
+                multiplierInput.step = "0.1";
+                multiplierInput.classList.add('input-field');
+                multiplierInput.addEventListener('input', (e) => {
+                    initialData[index].multiplier = parseFloat(e.target.value) || 0;
+                    updateRow(row, index);
+                });
+                multiplierCell.appendChild(multiplierInput);
+
+                const minCell = row.insertCell();
+                const minInput = document.createElement('input');
+                minInput.type = 'number';
+                minInput.value = data.min;
+                minInput.min = "0";
+                minInput.classList.add('input-field');
+                minInput.addEventListener('input', (e) => {
+                    initialData[index].min = parseInt(e.target.value) || 0;
+                    updateRow(row, index);
+                });
+                minCell.appendChild(minInput);
+
+                const secCell = row.insertCell();
+                const secInput = document.createElement('input');
+                secInput.type = 'number';
+                secInput.value = data.sec;
+                secInput.min = "0";
+                secInput.max = "59";
+                secInput.classList.add('input-field');
+                secInput.addEventListener('input', (e) => {
+                    initialData[index].sec = parseInt(e.target.value) || 0;
+                    updateRow(row, index);
+                });
+                secCell.appendChild(secInput);
+
+                const finalTimeCell = row.insertCell();
+                finalTimeCell.classList.add('font-semibold', 'final-time-text');
+
+                updateRow(row, index);
+            });
+        }
+
+        /**
+         * Updates a specific row's calculated final time and re-renders recommendations.
+         * @param {HTMLTableRowElement} row - The table row element to update.
+         * @param {number} index - The index of the data in the initialData array.
+         */
+        function updateRow(row, index) {
+            const data = initialData[index];
+            const finalTimeInSeconds = calculateFinalTimeInSeconds(data.multiplier, data.min, data.sec);
+            const formattedFinalTime = formatTime(finalTimeInSeconds);
+
+            row.cells[4].textContent = formattedFinalTime;
+            data.finalTimeInSeconds = finalTimeInSeconds;
+
+            renderRecommendations();
+        }
+
+        /**
+         * Renders the top 4 performers based on the HIGHEST final time.
+         */
+        function renderRecommendations() {
+            const validPerformers = initialData.filter(p => !isNaN(p.finalTimeInSeconds) && p.finalTimeInSeconds >= 0);
+            validPerformers.sort((a, b) => b.finalTimeInSeconds - a.finalTimeInSeconds);
+            const top4 = validPerformers.slice(0, 4);
+
+            recommendationList.innerHTML = '';
+
+            if (top4.length === 0) {
+                recommendationList.innerHTML = '<li class="text-gray-600">No valid data to recommend.</li>';
+                return;
+            }
+
+            top4.forEach(person => {
+                const listItem = document.createElement('li');
+                listItem.textContent = `${person.survivor}: ${formatTime(person.finalTimeInSeconds)}`;
+                recommendationList.appendChild(listItem);
+            });
+        }
+
+        // --- Theme Toggle Logic ---
+
+        /**
+         * Applies the given theme ('light' or 'dark') to the HTML element.
+         * Stores the preference in localStorage and updates the icon.
+         * @param {string} theme - 'light' or 'dark'.
+         */
+        function applyTheme(theme) {
+            if (theme === 'dark') {
+                htmlElement.classList.add('dark');
+                themeIconSpan.innerHTML = moonIcon; // Show moon for dark mode
+            } else {
+                htmlElement.classList.remove('dark');
+                themeIconSpan.innerHTML = sunIcon; // Show sun for light mode
+            }
+            localStorage.setItem('theme', theme); // Save user preference
+        }
+
+        /**
+         * Toggles the current theme between light and dark.
+         */
+        function toggleTheme() {
+            const currentTheme = htmlElement.classList.contains('dark') ? 'dark' : 'light';
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            applyTheme(newTheme);
+        }
+
+        // Event listener for the theme toggle button
+        themeToggleBtn.addEventListener('click', toggleTheme);
+
+        // Initial theme setup on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            renderTable();
+
+            // 1. Check for saved theme in localStorage
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme) {
+                applyTheme(savedTheme);
+            } else {
+                // 2. If no saved theme, check system preference
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                applyTheme(prefersDark ? 'dark' : 'light');
+            }
+
+            // 3. Listen for changes in system theme preference
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+                // Only change if the user hasn't explicitly set a theme (i.e., no savedTheme)
+                // If they have a saved theme, their manual choice overrides system preference
+                if (!localStorage.getItem('theme')) {
+                    applyTheme(e.matches ? 'dark' : 'light');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
