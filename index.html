@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Survivor Speedup Times</title>
+    <title>What Lawyers Should I Choose?</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
@@ -207,7 +207,7 @@
 </head>
 <body class="p-4">
     <div class="container mx-auto p-8 rounded-xl">
-        <h1 class="text-3xl font-bold text-center mb-8">Survivor Speedup Times</h1>
+        <h1 class="text-3xl font-bold text-center mb-8">What Lawyers Should I Choose?</h1>
 
         <div class="table-responsive mb-8">
             <table id="timeTable">
@@ -372,7 +372,7 @@
                     // Numeric comparison
                     return currentSortDirection === 'asc' ?
                            valA - valB :
-                           valB - a.finalTimeInSeconds; /* Corrected: b.finalTimeInSeconds - a.finalTimeInSeconds */
+                           b.finalTimeInSeconds - a.finalTimeInSeconds; /* Corrected: b.finalTimeInSeconds - a.finalTimeInSeconds */
                 }
                 return 0; // No sort if column not recognized
             });
@@ -564,7 +564,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             // Add event listeners to sortable headers
             document.querySelectorAll('#timeTable th[data-sort-column]').forEach(header => {
-                header.addEventListener('click', () => handleSort(header.dataset.sortColumn));
+                header.addEventListener('click', () => handleSort(header.dataset.column));
             });
 
             renderTable(); // Render table with pre-filled survivors and initial sort
