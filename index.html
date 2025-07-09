@@ -481,8 +481,10 @@
             top4.forEach(p => { // Loop through top4, not validPerformers
                 totalHelpRequests += p.multiplier;
                 totalBaseSeconds += (p.min * 60) + p.sec;
-                overallTotalFinalSeconds += p.finalTimeInSeconds;
             });
+
+            // NEW: Calculate overallTotalFinalSeconds as (Additional Help Requests) * (Additional Time Per Request)
+            overallTotalFinalSeconds = totalHelpRequests * totalBaseSeconds;
 
             // Adjusted summaryInfo.innerHTML with new text labels
             summaryInfo.innerHTML = `
