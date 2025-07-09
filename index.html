@@ -21,6 +21,27 @@
         th {
             background-color: #e2e8f0; /* Light gray for headers */
             color: #4a5568; /* Darker text for headers */
+            cursor: pointer; /* Indicate clickable headers */
+            position: relative; /* For sort indicator */
+        }
+        th:hover {
+            background-color: #d1d9e0; /* Slightly darker on hover */
+        }
+        th.sorted-asc::after {
+            content: ' ▲'; /* Up arrow for ascending */
+            font-size: 0.7em;
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        th.sorted-desc::after {
+            content: ' ▼'; /* Down arrow for descending */
+            font-size: 0.7em;
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
         }
         td {
             background-color: #f7fafc; /* Very light gray for data cells */
@@ -35,6 +56,7 @@
             text-align: center; /* Center text in inputs */
         }
         .input-field:focus {
+            outline: none; /* Remove default focus outline */
             border-color: #3b82f6; /* Blue on focus */
             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
         }
@@ -64,6 +86,9 @@
         html.dark th {
             background-color: #4a5568; /* Darker gray for headers */
             color: #e2e8f0; /* Lighter text for headers */
+        }
+        html.dark th:hover {
+            background-color: #5a6578; /* Darker gray on hover */
         }
         html.dark td {
             background-color: #2d3748; /* Even darker for data cells */
@@ -134,14 +159,14 @@
             <table id="timeTable">
                 <thead>
                     <tr>
-                        <th class="rounded-tl-lg">Survivor</th>
+                        <th class="rounded-tl-lg" data-sort-column="survivor">Survivor</th>
                         <th>Help</th>
                         <th>Min</th>
                         <th>Sec</th>
-                        <th class="rounded-tr-lg">Final Time</th>
+                        <th class="rounded-tr-lg" data-sort-column="finalTimeInSeconds">Final Time</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="timeTableBody">
                     <!-- Data will be populated by JavaScript -->
                 </tbody>
             </table>
@@ -149,7 +174,10 @@
 
         <div id="recommendations" class="recommendations mx-auto max-w-xl">
             <h2 class="text-2xl font-semibold">Recommended Survivors</h2>
-            <ol id="recommendationList" class="text-lg"></ol>
+            <ol id="recommendationList" class="text-lg mb-4"></ol>
+            <div id="summaryInfo" class="text-gray-700 text-sm">
+                <!-- Summary info will be displayed here -->
+            </div>
         </div>
 
         <div class="flex justify-center mt-8">
@@ -162,24 +190,29 @@
     </div>
 
     <script>
-        // Initial data based on your spreadsheet image
+        // Initial data - pre-filled survivors with zeroed time fields
         const initialData = [
-            { survivor: "Amanda", multiplier: 2, min: 10, sec: 40 },
-            { survivor: "Catherine", multiplier: 2, min: 8, sec: 0 },
-            { survivor: "Charles (UR)", multiplier: 3, min: 13, sec: 21 },
-            { survivor: "Charles (SSR)", multiplier: 2, min: 10, sec: 20 },
-            { survivor: "Emily", multiplier: 3, min: 4, sec: 48 },
-            { survivor: "Javier", multiplier: 2, min: 10, sec: 0 },
-            { survivor: "Karen", multiplier: 3, min: 4, sec: 48 },
-            { survivor: "Maria", multiplier: 3, min: 14, sec: 24 },
-            { survivor: "Michael", multiplier: 3, min: 4, sec: 48 }
+            { survivor: "Amanda", multiplier: 0, min: 0, sec: 0 },
+            { survivor: "Catherine", multiplier: 0, min: 0, sec: 0 },
+            { survivor: "Charles (UR)", multiplier: 0, min: 0, sec: 0 },
+            { survivor: "Charles (SSR)", multiplier: 0, min: 0, sec: 0 },
+            { survivor: "Emily", multiplier: 0, min: 0, sec: 0 },
+            { survivor: "Javier", multiplier: 0, min: 0, sec: 0 },
+            { survivor: "Karen", multiplier: 0, min: 0, sec: 0 },
+            { survivor: "Maria", multiplier: 0, min: 0, sec: 0 },
+            { survivor: "Michael", multiplier: 0, min: 0, sec: 0 }
         ];
 
-        const timeTableBody = document.querySelector('#timeTable tbody');
+        const timeTableBody = document.getElementById('timeTableBody');
         const recommendationList = document.getElementById('recommendationList');
+        const summaryInfo = document.getElementById('summaryInfo');
         const themeToggleBtn = document.getElementById('themeToggle');
         const themeIconSpan = document.getElementById('themeIcon');
         const htmlElement = document.documentElement;
+
+        // Sorting state variables
+        let currentSortColumn = 'survivor'; // Default sort column
+        let currentSortDirection = 'asc'; // Default sort direction
 
         // Lucide SVG icons
         const sunIcon = `
@@ -226,27 +259,75 @@
         }
 
         /**
-         * Renders the table rows and calculates times.
+         * Updates a specific row's calculated final time and re-renders recommendations.
+         * @param {HTMLTableRowElement} row - The table row element to update.
+         * @param {number} index - The index of the data in the initialData array.
+         */
+        function updateRow(row, index) {
+            const data = initialData[index];
+            const finalTimeInSeconds = calculateFinalTimeInSeconds(data.multiplier, data.min, data.sec);
+            const formattedFinalTime = formatTime(finalTimeInSeconds);
+
+            // Ensure row.cells[4] exists before attempting to set textContent
+            if (row.cells[4]) {
+                row.cells[4].textContent = formattedFinalTime;
+            }
+            data.finalTimeInSeconds = finalTimeInSeconds;
+
+            renderRecommendations();
+        }
+
+        /**
+         * Renders the table rows and applies current sorting.
          */
         function renderTable() {
             timeTableBody.innerHTML = ''; // Clear existing rows
+
+            // Apply sorting before rendering
+            initialData.sort((a, b) => {
+                let valA = a[currentSortColumn];
+                let valB = b[currentSortColumn];
+
+                if (currentSortColumn === 'survivor') {
+                    // Case-insensitive string comparison
+                    return currentSortDirection === 'asc' ?
+                           valA.localeCompare(valB) :
+                           valB.localeCompare(valA);
+                } else if (currentSortColumn === 'finalTimeInSeconds') {
+                    // Numeric comparison
+                    return currentSortDirection === 'asc' ?
+                           valA - valB :
+                           valB - valA;
+                }
+                return 0; // No sort if column not recognized
+            });
 
             initialData.forEach((data, index) => {
                 const row = timeTableBody.insertRow();
                 row.dataset.index = index;
 
                 const survivorCell = row.insertCell();
-                survivorCell.textContent = data.survivor;
+                const nameInput = document.createElement('input');
+                nameInput.type = 'text';
+                nameInput.value = data.survivor;
+                nameInput.placeholder = 'Survivor Name';
+                nameInput.classList.add('input-field', 'w-full');
+                nameInput.tabIndex = -1; // Make it not tab-selectable
+                nameInput.addEventListener('input', (e) => {
+                    initialData[index].survivor = e.target.value;
+                    updateRow(row, index);
+                });
+                survivorCell.appendChild(nameInput);
+
 
                 const multiplierCell = row.insertCell();
                 const multiplierInput = document.createElement('input');
                 multiplierInput.type = 'number';
                 multiplierInput.value = data.multiplier;
                 multiplierInput.min = "0";
-                multiplierInput.step = "0.1";
                 multiplierInput.classList.add('input-field');
                 multiplierInput.addEventListener('input', (e) => {
-                    initialData[index].multiplier = parseFloat(e.target.value) || 0;
+                    initialData[index].multiplier = parseInt(e.target.value) || 0;
                     updateRow(row, index);
                 });
                 multiplierCell.appendChild(multiplierInput);
@@ -279,40 +360,80 @@
                 const finalTimeCell = row.insertCell();
                 finalTimeCell.classList.add('font-semibold', 'final-time-text');
 
+                // Initial calculation for the row
                 updateRow(row, index);
+            });
+
+            // Update sort indicators on headers
+            document.querySelectorAll('#timeTable th[data-sort-column]').forEach(th => {
+                th.classList.remove('sorted-asc', 'sorted-desc');
+                if (th.dataset.sortColumn === currentSortColumn) {
+                    th.classList.add(`sorted-${currentSortDirection}`);
+                }
             });
         }
 
         /**
-         * Updates a specific row's calculated final time and re-renders recommendations.
-         * @param {HTMLTableRowElement} row - The table row element to update.
-         * @param {number} index - The index of the data in the initialData array.
+         * Handles sorting the table when a header is clicked.
+         * @param {string} column - The data property to sort by.
          */
-        function updateRow(row, index) {
-            const data = initialData[index];
-            const finalTimeInSeconds = calculateFinalTimeInSeconds(data.multiplier, data.min, data.sec);
-            const formattedFinalTime = formatTime(finalTimeInSeconds);
-
-            row.cells[4].textContent = formattedFinalTime;
-            data.finalTimeInSeconds = finalTimeInSeconds;
-
-            renderRecommendations();
+        function handleSort(column) {
+            if (currentSortColumn === column) {
+                // If same column, toggle direction
+                currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                // If new column, set it as current and default to ascending
+                currentSortColumn = column;
+                currentSortDirection = 'asc';
+            }
+            renderTable(); // Re-render table with new sort order
         }
 
         /**
-         * Renders the top 4 performers based on the HIGHEST final time.
+         * Renders the top 4 performers based on the HIGHEST final time and summary info.
          */
         function renderRecommendations() {
-            const validPerformers = initialData.filter(p => !isNaN(p.finalTimeInSeconds) && p.finalTimeInSeconds >= 0);
+            const validPerformers = initialData.filter(p => {
+                const hasSurvivorName = p.survivor && p.survivor.trim() !== '';
+                const hasValidNumbers = !isNaN(p.multiplier) && p.multiplier >= 0 &&
+                                       !isNaN(p.min) && p.min >= 0 &&
+                                       !isNaN(p.sec) && p.sec >= 0 && p.sec < 60;
+                // A survivor is considered "valid" for recommendation if they have a name AND
+                // their help, min, OR sec is greater than 0.
+                const hasNonZeroTime = p.multiplier > 0 || p.min > 0 || p.sec > 0;
+
+                return hasSurvivorName && hasValidNumbers && hasNonZeroTime;
+            });
+
+            // Calculate summary info
+            let totalHelpRequests = 0;
+            let totalBaseSeconds = 0;
+            let overallTotalFinalSeconds = 0;
+
+            validPerformers.forEach(p => {
+                totalHelpRequests += p.multiplier;
+                totalBaseSeconds += (p.min * 60) + p.sec;
+                overallTotalFinalSeconds += p.finalTimeInSeconds;
+            });
+
+            summaryInfo.innerHTML = `
+                <p>Total Valid Survivors: ${validPerformers.length}</p>
+                <p>Total Help Requests: ${totalHelpRequests}</p>
+                <p>Total Base Time: ${formatTime(totalBaseSeconds)}</p>
+                <p>Overall Total Final Time: ${formatTime(overallTotalFinalSeconds)}</p>
+            `;
+
+
+            recommendationList.innerHTML = ''; // Clear existing recommendations
+
+            if (validPerformers.length < 4) {
+                recommendationList.innerHTML = '<li class="text-gray-600">Not enough data to recommend top 4 survivors (need at least 4 valid entries with non-zero time).</li>';
+                return;
+            }
+
             validPerformers.sort((a, b) => b.finalTimeInSeconds - a.finalTimeInSeconds);
             const top4 = validPerformers.slice(0, 4);
 
-            recommendationList.innerHTML = '';
-
-            if (top4.length === 0) {
-                recommendationList.innerHTML = '<li class="text-gray-600">No valid data to recommend.</li>';
-                return;
-            }
 
             top4.forEach(person => {
                 const listItem = document.createElement('li');
@@ -351,9 +472,15 @@
         // Event listener for the theme toggle button
         themeToggleBtn.addEventListener('click', toggleTheme);
 
-        // Initial theme setup on page load
+        // Initial render when the page loads
         document.addEventListener('DOMContentLoaded', () => {
-            renderTable();
+            // Add event listeners to sortable headers
+            document.querySelectorAll('#timeTable th[data-sort-column]').forEach(header => {
+                header.addEventListener('click', () => handleSort(header.dataset.sortColumn));
+            });
+
+            renderTable(); // Render table with pre-filled survivors and initial sort
+            renderRecommendations(); // Render recommendations (will show "Not enough data" initially)
 
             // 1. Check for saved theme in localStorage
             const savedTheme = localStorage.getItem('theme');
