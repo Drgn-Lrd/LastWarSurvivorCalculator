@@ -42,6 +42,8 @@
             color: #4a5568; /* Darker text for headers */
             cursor: pointer; /* Indicate clickable headers */
             position: relative; /* For sort indicator */
+            white-space: nowrap; /* Keep header text on one line */
+            text-align: center; /* Center header text */
         }
         th:hover {
             background-color: #d1d9e0; /* Slightly darker on hover */
@@ -65,6 +67,7 @@
         td {
             background-color: #f7fafc; /* Very light gray for data cells */
             border: 1px solid #edf2f7; /* Subtle border */
+            word-wrap: break-word; /* Allow word wrap for long content in data cells */
         }
         tr:hover td {
             background-color: #e0f2fe; /* Light blue on hover */
@@ -72,7 +75,6 @@
         .input-field {
             border: 1px solid #cbd5e0;
             width: 100%; /* Make inputs take full width of their cell */
-            max-width: 80px; /* But limit their max width for larger screens */
             text-align: center; /* Center text in inputs */
             box-sizing: border-box; /* Include padding and border in the element's total width and height */
         }
@@ -81,6 +83,13 @@
             border-color: #3b82f6; /* Blue on focus */
             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
         }
+        /* NEW: Specific max-width for Help, Min, Sec input fields */
+        #timeTable td:nth-child(2) .input-field,
+        #timeTable td:nth-child(3) .input-field,
+        #timeTable td:nth-child(4) .input-field {
+            max-width: 40px; /* Constrain these inputs to 40px */
+        }
+
         .recommendations {
             background-color: #ecfdf5; /* Light green for recommendations */
             border: 1px solid #a7f3d0;
@@ -164,20 +173,40 @@
             -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
             margin-left: auto; /* Center the table-responsive div */
             margin-right: auto; /* Center the table-responsive div */
-            /* Removed max-width: fit-content to allow it to expand if needed */
+            max-width: fit-content; /* Make table container fit its content */
         }
 
         /* Center the table within its responsive container */
         #timeTable {
             margin-left: auto;
             margin-right: auto;
-            width: 100%; /* Ensure table takes full width of its container */
-            /* Removed min-width to allow it to shrink on small screens */
+            table-layout: fixed; /* Distribute column widths based on explicit settings */
+        }
+
+        /* Explicit column widths for better control and preventing cutoff */
+        #timeTable th:nth-child(1),
+        #timeTable td:nth-child(1) {
+            min-width: 150px; /* Survivor column - just enough for 'Charles (SSR)' */
+        }
+
+        /* Combined rule for Help, Min, Sec columns */
+        #timeTable th:nth-child(2),
+        #timeTable td:nth-child(2),
+        #timeTable th:nth-child(3),
+        #timeTable td:nth-child(3),
+        #timeTable th:nth-child(4),
+        #timeTable td:nth-child(4) {
+            min-width: 40px; /* Even smaller for compact number fields */
+        }
+
+        #timeTable th:nth-child(5),
+        #timeTable td:nth-child(5) {
+            min-width: 90px; /* Final Time column - enough for header and formatted time */
         }
     </style>
 </head>
 <body class="p-4">
-    <div class="container max-w-900px mx-auto p-8 rounded-xl">
+    <div class="container mx-auto p-8 rounded-xl">
         <h1 class="text-3xl font-bold text-center mb-8">Survivor Speedup Times</h1>
 
         <div class="table-responsive mb-8">
@@ -275,7 +304,7 @@
          * Calculates the final time in seconds based on input values.
          * @param {number} multiplierValue - Value from the 'Help' column, now acting as a multiplier.
          * @param {number} minutes - Value from 'min' column.
-         * @param {number} seconds - Value from 'sec' column.
+         * @param {number} number - Value from 'sec' column.
          * @returns {number} Total final time in seconds.
          */
         function calculateFinalTimeInSeconds(multiplierValue, minutes, seconds) {
@@ -351,6 +380,9 @@
                 multiplierInput.value = data.multiplier;
                 multiplierInput.min = "0";
                 multiplierInput.classList.add('input-field');
+                // Clear on focus, restore 0 on blur if empty
+                multiplierInput.addEventListener('focus', (e) => { if (e.target.value === '0') e.target.value = ''; });
+                multiplierInput.addEventListener('blur', (e) => { if (e.target.value === '') e.target.value = '0'; });
                 multiplierInput.addEventListener('input', (e) => {
                     initialData[index].multiplier = parseInt(e.target.value) || 0;
                     updateRow(row, index);
@@ -363,6 +395,9 @@
                 minInput.value = data.min;
                 minInput.min = "0";
                 minInput.classList.add('input-field');
+                // Clear on focus, restore 0 on blur if empty
+                minInput.addEventListener('focus', (e) => { if (e.target.value === '0') e.target.value = ''; });
+                minInput.addEventListener('blur', (e) => { if (e.target.value === '') e.target.value = '0'; });
                 minInput.addEventListener('input', (e) => {
                     initialData[index].min = parseInt(e.target.value) || 0;
                     updateRow(row, index);
@@ -376,6 +411,9 @@
                 secInput.min = "0";
                 secInput.max = "59";
                 secInput.classList.add('input-field');
+                // Clear on focus, restore 0 on blur if empty
+                secInput.addEventListener('focus', (e) => { if (e.target.value === '0') e.target.value = ''; });
+                secInput.addEventListener('blur', (e) => { if (e.target.value === '') e.target.value = '0'; });
                 secInput.addEventListener('input', (e) => {
                     initialData[index].sec = parseInt(e.target.value) || 0;
                     updateRow(row, index);
@@ -409,7 +447,8 @@
             } else {
                 // If new column, set it as current and default to ascending
                 currentSortColumn = column;
-                currentSortDirection = 'asc';
+                // Special case: First click on Final Time should be Descending (High to Low)
+                currentSortDirection = (column === 'finalTimeInSeconds') ? 'desc' : 'asc';
             }
             renderTable(); // Re-render table with new sort order
         }
