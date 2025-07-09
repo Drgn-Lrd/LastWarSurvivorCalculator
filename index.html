@@ -290,14 +290,35 @@
 
 
         /**
-         * Converts total seconds into a "Xm Ys" formatted string.
+         * Converts total seconds into a "Xd YH Ym Ys" formatted string,
+         * only including days and hours if they are non-zero.
          * @param {number} totalSeconds - The total time in seconds.
          * @returns {string} Formatted time string.
          */
         function formatTime(totalSeconds) {
-            const minutes = Math.floor(totalSeconds / 60);
-            const seconds = totalSeconds % 60;
-            return `${minutes}m ${seconds}s`;
+            let result = '';
+            const secondsInMinute = 60;
+            const secondsInHour = 60 * secondsInMinute;
+            const secondsInDay = 24 * secondsInHour;
+
+            const days = Math.floor(totalSeconds / secondsInDay);
+            totalSeconds %= secondsInDay;
+
+            const hours = Math.floor(totalSeconds / secondsInHour);
+            totalSeconds %= secondsInHour;
+
+            const minutes = Math.floor(totalSeconds / secondsInMinute);
+            const seconds = totalSeconds % secondsInMinute;
+
+            if (days > 0) {
+                result += `${days}d `;
+            }
+            if (hours > 0 || days > 0) { // Include hours if non-zero or if days are present
+                result += `${hours}h `;
+            }
+            result += `${minutes}m ${seconds}s`; // Always include minutes and seconds
+
+            return result.trim();
         }
 
         /**
@@ -351,7 +372,7 @@
                     // Numeric comparison
                     return currentSortDirection === 'asc' ?
                            valA - valB :
-                           valB - valA;
+                           valB - a.finalTimeInSeconds; /* Corrected: b.finalTimeInSeconds - a.finalTimeInSeconds */
                 }
                 return 0; // No sort if column not recognized
             });
