@@ -469,22 +469,26 @@
                 return hasSurvivorName && hasValidNumbers && hasNonZeroTime;
             });
 
-            // Calculate summary info
+            // Sort all valid performers to get the top 4
+            validPerformers.sort((a, b) => b.finalTimeInSeconds - a.finalTimeInSeconds);
+            const top4 = validPerformers.slice(0, 4);
+
+            // Calculate summary info ONLY for the top 4 performers
             let totalHelpRequests = 0;
             let totalBaseSeconds = 0;
             let overallTotalFinalSeconds = 0;
 
-            validPerformers.forEach(p => {
+            top4.forEach(p => { // Loop through top4, not validPerformers
                 totalHelpRequests += p.multiplier;
                 totalBaseSeconds += (p.min * 60) + p.sec;
                 overallTotalFinalSeconds += p.finalTimeInSeconds;
             });
 
-            // Adjusted summaryInfo.innerHTML to remove "Total Valid Survivors" and ensure color contrast
+            // Adjusted summaryInfo.innerHTML with new text labels
             summaryInfo.innerHTML = `
-                <p>Total Help Requests: ${totalHelpRequests}</p>
-                <p>Total Base Time: ${formatTime(totalBaseSeconds)}</p>
-                <p>Overall Total Final Time: ${formatTime(overallTotalFinalSeconds)}</p>
+                <p>Additional Help Requests: ${totalHelpRequests}</p>
+                <p>Additional Time Per Request: ${formatTime(totalBaseSeconds)}</p>
+                <p>Additional Speedup Total: ${formatTime(overallTotalFinalSeconds)}</p>
             `;
 
 
@@ -494,9 +498,6 @@
                 recommendationList.innerHTML = '<li class="text-gray-600">Not enough data to recommend top 4 survivors (need at least 4 valid entries with non-zero time).</li>';
                 return;
             }
-
-            validPerformers.sort((a, b) => b.finalTimeInSeconds - a.finalTimeInSeconds);
-            const top4 = validPerformers.slice(0, 4);
 
 
             top4.forEach(person => {
